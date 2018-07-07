@@ -44,7 +44,7 @@ var ITEM_FIELDS = [
   'dc:date',
 ];
 
-var mapItunesField = function(f) {
+var mapItunesField = function (f) {
   return ['itunes:' + f, f];
 }
 
@@ -65,28 +65,28 @@ var PODCAST_ITEM_FIELDS = ([
 ]).map(mapItunesField);
 
 
-var stripHtml = function(str) {
+var stripHtml = function (str) {
   return str.replace(/<(?:.|\n)*?>/gm, '');
 }
 
-var getSnippet = function(str) {
+var getSnippet = function (str) {
   return Entities.decode(stripHtml(str)).trim();
 }
 
-var getContent = function(content) {
+var getContent = function (content) {
   if (typeof content._ === 'string') {
     return content._;
   } else if (typeof content === 'object') {
-    var builder = new XML2JS.Builder({headless: true, explicitRoot: true, rootName: 'div', renderOpts: {pretty: false}});
+    var builder = new XML2JS.Builder({ headless: true, explicitRoot: true, rootName: 'div', renderOpts: { pretty: false } });
     return builder.buildObject(content);
   } else {
     return content;
   }
 }
 
-var parseAtomFeed = function(xmlObj, options, callback) {
+var parseAtomFeed = function (xmlObj, options, callback) {
   var feed = xmlObj.feed;
-  var json = {feed: {entries: []}};
+  var json = { feed: { entries: [] } };
   if (feed.link) {
     if (feed.link[0] && feed.link[0].$.href) json.feed.link = feed.link[0].$.href;
     if (feed.link[1] && feed.link[1].$.href) json.feed.feedUrl = feed.link[1].$.href;
@@ -119,17 +119,17 @@ var parseAtomFeed = function(xmlObj, options, callback) {
   callback(null, json);
 }
 
-var parseRSS1 = function(xmlObj, options, callback) {
+var parseRSS1 = function (xmlObj, options, callback) {
   xmlObj = xmlObj['rdf:RDF'];
   var channel = xmlObj.channel[0];
   var items = xmlObj.item;
   return parseRSS(channel, items, options, callback);
 }
 
-var parseRSS2 = function(xmlObj, options, callback) {
+var parseRSS2 = function (xmlObj, options, callback) {
   var channel = xmlObj.rss.channel[0];
   var items = channel.item;
-  return parseRSS(channel, items, options, function(err, data) {
+  return parseRSS(channel, items, options, function (err, data) {
     if (err) return callback(err);
     if (xmlObj.rss.$['xmlns:itunes']) {
       decorateItunes(data, channel);
@@ -138,21 +138,21 @@ var parseRSS2 = function(xmlObj, options, callback) {
   });
 }
 
-var parseRSS = function(channel, items, options, callback) {
+var parseRSS = function (channel, items, options, callback) {
   items = items || [];
   options.customFields = options.customFields || {};
   var itemFields = ITEM_FIELDS.concat(options.customFields.item || []);
   var feedFields = FEED_FIELDS.concat(options.customFields.feed || []);
 
-  var json = {feed: {entries: []}};
+  var json = { feed: { entries: [] } };
 
   if (channel['atom:link']) json.feed.feedUrl = channel['atom:link'][0].$.href;
   copyFromXML(channel, json.feed, feedFields);
-  items.forEach(function(item) {
+  items.forEach(function (item) {
     var entry = {};
     copyFromXML(item, entry, itemFields);
     if (item.enclosure) {
-        entry.enclosure = item.enclosure[0].$;
+      entry.enclosure = item.enclosure[0].$;
     }
     if (item.description) {
       entry.content = getContent(item.description[0]);
@@ -176,8 +176,8 @@ var parseRSS = function(channel, items, options, callback) {
   callback(null, json);
 }
 
-var copyFromXML = function(xml, dest, fields) {
-  fields.forEach(function(f) {
+var copyFromXML = function (xml, dest, fields) {
+  fields.forEach(function (f) {
     var from = f;
     var to = f;
     if (Array.isArray(f)) {
@@ -197,31 +197,31 @@ var copyFromXML = function(xml, dest, fields) {
  */
 var decorateItunes = function decorateItunes(json, channel) {
   var items = channel.item || [],
-      entry = {};
+    entry = {};
   json.feed.itunes = {}
 
   if (channel['itunes:owner']) {
     var owner = {},
-        image;
+      image;
 
-    if(channel['itunes:owner'][0]['itunes:name']) {
+    if (channel['itunes:owner'][0]['itunes:name']) {
       owner.name = channel['itunes:owner'][0]['itunes:name'][0];
     }
-    if(channel['itunes:owner'][0]['itunes:email']) {
+    if (channel['itunes:owner'][0]['itunes:email']) {
       owner.email = channel['itunes:owner'][0]['itunes:email'][0];
     }
-    if(channel['itunes:image']) {
+    if (channel['itunes:image']) {
       image = channel['itunes:image'][0].$.href
     }
 
-    if(image) {
+    if (image) {
       json.feed.itunes.image = image;
     }
     json.feed.itunes.owner = owner;
   }
 
   copyFromXML(channel, json.feed.itunes, PODCAST_FEED_FIELDS);
-  items.forEach(function(item, index) {
+  items.forEach(function (item, index) {
     var entry = json.feed.entries[index];
     entry.itunes = {};
     copyFromXML(item, entry.itunes, PODCAST_ITEM_FIELDS);
@@ -232,12 +232,12 @@ var decorateItunes = function decorateItunes(json, channel) {
   });
 }
 
-Parser.parseString = function(xml, options, callback) {
+Parser.parseString = function (xml, options, callback) {
   if (!callback) {
     callback = options;
     options = {};
   }
-  XML2JS.parseString(xml, function(err, result) {
+  XML2JS.parseString(xml, function (err, result) {
     if (err) return callback(err);
     if (result.feed) {
       return parseAtomFeed(result, options, callback)
@@ -249,7 +249,7 @@ Parser.parseString = function(xml, options, callback) {
   });
 }
 
-Parser.parseURL = function(feedUrl, options, callback) {
+Parser.parseURL = function (feedUrl, options, callback) {
   if (!callback) {
     callback = options;
     options = {};
@@ -264,9 +264,8 @@ Parser.parseURL = function(feedUrl, options, callback) {
     auth: parsedUrl.auth,
     protocol: parsedUrl.protocol,
     hostname: parsedUrl.hostname,
-    path: parsedUrl.path,
-    headers: {'User-Agent': 'rss-parser'}
-  }, function(res) {
+    path: parsedUrl.path
+  }, function (res) {
     if (res.statusCode >= 300 && res.statusCode < 400 && res.headers['location']) {
       if (options.maxRedirects === 0) return callback(new Error("Status code " + res.statusCode));
       if (options.__redirectCount === options.maxRedirects) return callback(new Error("Too many redirects"));
@@ -274,10 +273,10 @@ Parser.parseURL = function(feedUrl, options, callback) {
       return Parser.parseURL(res.headers['location'], options, callback);
     }
     res.setEncoding('utf8');
-    res.on('data', function(chunk) {
+    res.on('data', function (chunk) {
       xml += chunk;
     });
-    res.on('end', function() {
+    res.on('end', function () {
       return Parser.parseString(xml, options, callback);
     })
   })
